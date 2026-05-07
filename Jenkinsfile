@@ -6,12 +6,12 @@ pipeline{
         IMAGE_TAG = "${BUILD_NUMBER}" //har build ka alag tag hoga for ex. 1,2,3.....
     }
     stages{
-        stage("checkout code"){
+        stage('checkout code'){
             steps{
                 echo 'code checkout  done automatically via SCM'
             }
         }
-        stage("buid docker image"){
+        stage('buid docker image'){
             steps{
                 script{
                     echo 'build docker image ......'
@@ -21,7 +21,7 @@ pipeline{
                     sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
                 }
             }
-            stage("push to dockerhub"){
+            stage('push to dockerhub'){
                 steps{
                     script{
                         echo 'pushing to dockerhub.....'
@@ -37,7 +37,7 @@ pipeline{
                 }
                 
             }
-            stage("deploy the container"){
+            stage('deploy the container'){
                 steps{
                     script{
                         echo "deploying application.."
