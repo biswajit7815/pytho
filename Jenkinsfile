@@ -1,49 +1,66 @@
-pipeline{
+pipeline {
     agent any 
-    environment{
+
+    environment {
         DOCKERHUB_USERNAME = 'biswaji7815'
         IMAGE_NAME = 'pytho'
         IMAGE_TAG = "${BUILD_NUMBER}" //har build ka alag tag hoga for ex. 1,2,3.....
     }
-    stages{
-        stage('checkout code'){
-            steps{
+
+    stages {
+
+        stage('checkout code') {
+            steps {
                 echo 'code checkout  done automatically via SCM'
             }
         }
-        stage('buid docker image'){
-            steps{
-                script{
+
+        stage('build docker image') {
+            steps {
+                script {
                     echo 'build docker image ......'
+
                     // image ke name format hoga usename/image:tag
-                    sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+                    sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG} ."
+
                     // ek latest tag bhi banata he taki deploy karna asan ho jaee..
-                    sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
+                    sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest ."
                 }
             }
-            stage('push to dockerhub'){
-                steps{
-                    script{
-                        echo 'pushing to dockerhub.....'
-                        withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]){
-                            // login command
-                            sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-                            // push command
-                            sh "docker push ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
-                            sh "docker push ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
-                        }
+        }
+
+        stage('push to dockerhub') {
+            steps {
+                script {
+                    echo 'pushing to dockerhub.....'
+
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'docker-hub-creds',
+                            passwordVariable: 'DOCKER_PASS',
+                            usernameVariable: 'DOCKER_USER'
+                        )
+                    ]) {
+
+                        // login command
+                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+
+                        // push command
+                        sh "docker push ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+                        sh "docker push ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
                     }
-                    
                 }
-                
             }
-            stage('deploy the container'){
-                steps{
-                    script{
-                        echo "deploying application.."
-                        sh "docker rm -f pytholab || true"
-                        sh "docker run -d --name pytholab -p 80:80 ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
-                    }
+        }
+
+        stage('deploy the container') {
+            steps {
+                script {
+                    echo "deploying application.."
+
+                    sh "docker rm -f pytholab || true"
+
+                    sh "docker run -d --name pytholab -p 80:80 ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
                 }
             }
         }
