@@ -2,7 +2,7 @@ pipeline {
     agent any 
 
     environment {
-        DOCKERHUB_USERNAME = 'biswaji7815'
+        DOCKERHUB_USERNAME = 'biswajit7815'
         IMAGE_NAME = 'pytho'
         IMAGE_TAG = "${BUILD_NUMBER}" //har build ka alag tag hoga for ex. 1,2,3.....
     }
