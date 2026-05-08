@@ -16,14 +16,33 @@ pipeline {
                 echo 'code checkout  done automatically via SCM'
             }
         }
-        stage('OWASP security scan'){
-            steps{
-                echo "scanning for vulnerabilities...."
-                // DP-Check oo nam he tool me dia tha.....
-                // pehili bar me chalne be 22-25 mins lega because (database update hone me...)
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+        stage('Security Scans (FS & Dependencies)') {
+            parallel {
+                // Parallel execution: OWASP aur Trivy FS saath mein chalenge time bachane ke liye
+                stage('OWASP Dependency Check') {
+                    steps {
+                        echo "Scanning Dependencies..."
+                        dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                    }
+                }
+                
+                stage('Trivy FS Scan') {
+                    steps {
+                        echo "Trivy Scanning File System..."
+                        // Ye poore folder (.) ko scan karega bugs/secrets ke liye
+                        sh "trivy fs . > trivy-fs-report.txt"
+                    }
+                }
             }
         }
+        // stage('OWASP security scan'){
+        //     steps{
+        //         echo "scanning for vulnerabilities...."
+        //         // DP-Check oo nam he tool me dia tha.....
+        //         // pehili bar me chalne be 22-25 mins lega because (database update hone me...)
+        //         dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+        //     }
+        // }
         stage('sonarqube analysis'){
             steps{
                 withSonarQubeEnv('sonar-server'){
@@ -44,6 +63,12 @@ pipeline {
                     // ek latest tag bhi banata he taki deploy karna asan ho jaee..
                     sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest ."
                 }
+            }
+        }
+        stage('trivy image scan'){
+            steps{
+                echo "scanning docker image for vulnerabilities"
+                sh "trivy image ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG} > trivy-image-report.txt"
             }
         }
 
@@ -88,6 +113,12 @@ pipeline {
         always{
             // OWASP ke report graph ke rup me dikhana....
             dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            // Trivy reports ko archive karna taaki download kar sakein
+            archiveArtifacts artifacts: 'trivy-fs-report.txt, trivy-image-report.txt', allowEmptyArchive: true
+        }
+        failure{
+            echo "build failed sending emial to developer"
+            mail to: 'biswajitbehera1868gmail.com', subject: "build failed: ${JOB_NAME}", body: "check jenkins logs"
         }
     }
 }
