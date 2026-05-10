@@ -118,7 +118,7 @@ pipeline {
         }
         failure{
             echo "build failed sending emial to developer"
-            mail to: 'biswajitbehera1868gmail.com', subject: "build failed: ${JOB_NAME}", body: "check jenkins logs"
+            mail to: 'biswajitbehera1868@gmail.com', subject: "build failed: ${JOB_NAME}", body: "check jenkins logs"
         }
     }
 }
